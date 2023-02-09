@@ -39,39 +39,79 @@ class Score:
         self.save_data(update.effective_chat.id, data)
 
         congratulate_message = ""
+        splitted_message = update.message.text.split('\n')
         if user_score == '100':
             congratulate_message = random.choice([f"Uff... This one was tough, right {user_name}?",
                                                   f"Maybe next time drink you coffee first!",
                                                   f"Ouchie!",
                                                   f"Oopa!",
-                                                  f"Hey, cheer up! Tomorrow can't be worse than this!",
+                                                  f"Hey, cheer up! Tomorrow can't be worse than this! 🤩",
                                                   "Look at the bright side... Ahm... Surely there is a bright side "
-                                                  "somewhere..."])
+                                                  "somewhere...",
+                                                  "Hahahahaha 🤣🤣!",
+                                                  f"You dummy! Did you really think it was {splitted_message[-1]}?",
+                                                  "Ahahahahahahahahaha",
+                                                  "😱😱😱"])
         elif user_score == '1':
             congratulate_message = random.choice([f"WOW! HOLE IN ONE FOR {user_name}",
-                                                  f"CHEATER ALERT! CHEATER ALERT! CHEATER ALERT!",
+                                                  f"CHEATER ALERT🔊! CHEATER ALERT🔊! CHEATER ALERT🔊!",
                                                   f"WE GOT A GENIUS OVER HERE!"])
         elif user_score == '2':
-            congratulate_message = random.choice([f"Nice one, {user_name}!",
+            congratulate_message = random.choice([f"Nice one, {user_name}! 🤓",
                                                   f"You're getting better {user_name}!",
                                                   f"Great job! Maybe mind sharing your starting word?",
-                                                  "Hmm... Great job, I guess..."])
-        elif user_score == '3' or user_score == '4':
-            congratulate_message = random.choice(["Not great, not terrible.",
-                                                  "Nice!",
+                                                  "Everybody here envies you today! 🧠",
+                                                  f"Get out of here! 😤 Who starts with {splitted_message[1]}"])
+        elif user_score == '3':
+            congratulate_message = random.choice(["Nice!",
                                                   "Good one!",
                                                   f"I'm proud of you, {user_name}!",
-                                                  "Great!"])
-        elif user_score == '5' or user_score == '6':
-            congratulate_message = random.choice(["Hey, at least you got it!",
-                                                  "I am 100% certain you didn't cheat today! Great job!",
+                                                  "Great!",
+                                                  "You are a machine! 🤖",
+                                                  f"Interesting choice of words! I wouldn't have thought of {splitted_message[2]}."])
+        elif user_score == '4':
+            congratulate_message = random.choice(["Not great, not terrible.",
+                                                  "Mediocre.. 🥱",
+                                                  "Oh.. I guess 4 isn't too bad for this word..",
+                                                  "You know you could have done better! 😉",
+                                                  "Mhm.. I'm not impressed, really."])
+        elif user_score == '5':
+            congratulate_message = random.choice(["",
+                                                  "Only one 2 outcomes are worse than this one! 😳",
                                                   "Bad luck!",
                                                   "Let's see how the others perform, don't give up yet!",
-                                                  "It's ok!"])
+                                                  "It's ok! 🤥",
+                                                  "Not really that good, is it?",
+                                                  "Hmm... Great job, I guess... 👺"])
+        elif user_score == '6':
+            congratulate_message = random.choice(["🤡",
+                                                "🤨",
+                                                "I am 100% certain you didn't cheat today! Great job!",
+                                                "Hey, at least you got it!",
+                                                "You must be very lucky in love! 💋",
+                                                "There is always tomorrow! 🤩"])
 
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text=congratulate_message,
-                                 reply_to_message_id=update.message.message_id)
+                                 reply_to_message_id=update.message.message_id,
+                                 disable_notification=True)
+    
+    def reset_game(self, chat_id, data, game_type):
+        for player_score in data['total_scores'][game_type]:
+            data['total_scores'][game_type][player_score] = 0
+        self.save_data(chat_id, data)
+    
+
+    def announce_winners(self, winners_names, update: Update, context: CallbackContext):
+        if len(winners_names) > 1:
+            announcement_message = "We have multiple winners!\n"
+            announcement_message += f"Everybody! Let's give a round of applause to: {', '.join(winners_names)}!\n"
+        else:
+            announcement_message = "We have a winner!\n"
+            announcement_message += f"Everybody! Let's give a round of applause to: {winners_names[0]}!\n"
+        announcement_message += "Congratulations!\n"
+        announcement_message += "I will reset everybody's score now. Good luck next game to all the other losers!"
+        context.bot.send_message(chat_id=update.effective_chat.id, text=announcement_message)
 
     def calculate_top_for_day(self, update: Update, context: CallbackContext):
         args = ' '.join(context.args)
@@ -102,6 +142,9 @@ class Score:
             third_prize = set([x for x in scores if x[0] != 100 and x[0] == min(third_set, key=lambda x: x[0])[0]])
         else:
             third_prize = set()
+
+        game_winners = []
+        
         for result in scores:
             if result[1] not in data['total_scores'][game_type]:
                 data['total_scores'][game_type][result[1]] = 0
@@ -111,6 +154,8 @@ class Score:
                 data['total_scores'][game_type][result[1]] += 2
             elif result in third_prize:
                 data['total_scores'][game_type][result[1]] += 1
+            if data['total_scores'][game_type][result[1]] >= 100:
+                game_winners.append(result[1])
         self.save_data(update.effective_chat.id, data)
 
         congratulate_message = ""
@@ -124,6 +169,10 @@ class Score:
 
         scores = self.construct_total_scores_string(update.effective_chat.id, game_type)
         context.bot.send_message(chat_id=update.effective_chat.id, text=scores)
+
+        if len(game_winners) > 0:
+            self.announce_winners(game_winners, update, context)
+            self.reset_game(update.effective_chat.id, data, game_type)
 
     def construct_total_scores_string(self, chat_id, game_type):
         data = self.get_scores_data(chat_id)
@@ -172,7 +221,7 @@ class Score:
         new_score = split_args[1]
         game_type = split_args[2]
         data = self.get_scores_data(update.effective_chat.id)
-        data["total-scores"][game_type][name] = new_score
-
+        data["total_scores"][game_type][name] = int(new_score)
+        self.save_data(update.effective_chat.id, data)
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text=f"Successfully set {name}'s score to {new_score}")
