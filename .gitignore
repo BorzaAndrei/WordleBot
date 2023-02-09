@@ -54,3 +54,4 @@ fabric.properties
 
 bot/__pycache__/*
 bot/.DS_Store/*
+bot/callbacks/__pycache__/*
