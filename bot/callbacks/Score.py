@@ -76,7 +76,7 @@ class Score:
                                                   "You know you could have done better! 😉",
                                                   "Mhm.. I'm not impressed, really."])
         elif user_score == '5':
-            congratulate_message = random.choice(["",
+            congratulate_message = random.choice(["Oopa!",
                                                   "Only one 2 outcomes are worse than this one! 😳",
                                                   "Bad luck!",
                                                   "Let's see how the others perform, don't give up yet!",
@@ -173,6 +173,69 @@ class Score:
         if len(game_winners) > 0:
             self.announce_winners(game_winners, update, context)
             self.reset_game(update.effective_chat.id, data, game_type)
+
+    def calculate_top_for_day_v2(self, update: Update, context: CallbackContext):
+        args = ' '.join(context.args)
+        split_args = args.split(' ')
+        if len(split_args) < 1:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Invalid Command! The structure is "
+                                                                            "/calculate {day_number} {normal/ro}")
+            return
+
+        day = split_args[0]
+        game_type = 'normal' if len(split_args) == 1 or 'ro' not in split_args[1] else 'ro'
+        data = self.get_scores_data(update.effective_chat.id)
+        if day not in data[game_type]:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Invalid day! Please enter a day where "
+                                                                            "players submitted their results!")
+            return
+        scores = set(
+            sorted([(data[game_type][day][player], player) for player in data[game_type][day]], key=lambda x: x[0],
+                   reverse=True))
+        
+        game_winners = []
+        congratulate_message = "Today's scoreboard:\n"
+        ind = 1
+        
+        for result in scores:
+            if result[1] not in data['total_scores'][game_type]:
+                data['total_scores'][game_type][result[1]] = 0
+            
+            congratulate_message += f"{ind}. {result[1]} +"
+
+            if result[0] == 1:
+                data['total_scores'][game_type][result[1]] += 10
+                congratulate_message += "10"
+            elif result[0] == 2:
+                data['total_scores'][game_type][result[1]] += 7
+                congratulate_message += "7"
+            elif result[0] == 3:
+                data['total_scores'][game_type][result[1]] += 5
+                congratulate_message += "5"
+            elif result[0] == 4:
+                data['total_scores'][game_type][result[1]] += 3
+                congratulate_message += "3"
+            elif result[0] == 5:
+                data['total_scores'][game_type][result[1]] += 2
+                congratulate_message += "2"
+            elif result[0] == 6:
+                data['total_scores'][game_type][result[1]] += 1
+                congratulate_message += "1"
+            congratulate_message += " points\n"
+            if data['total_scores'][game_type][result[1]] >= 100:
+                game_winners.append(result[1])
+            ind += 1
+        
+        self.save_data(update.effective_chat.id, data)
+        context.bot.send_message(chat_id=update.effective_chat.id, text=congratulate_message)
+
+        total_scores = self.construct_total_scores_string(update.effective_chat.id, game_type)
+        context.bot.send_message(chat_id=update.effective_chat.id, text=total_scores)
+
+        if len(game_winners) > 0:
+            self.announce_winners(game_winners, update, context)
+            self.reset_game(update.effective_chat.id, data, game_type)
+
 
     def construct_total_scores_string(self, chat_id, game_type):
         data = self.get_scores_data(chat_id)
