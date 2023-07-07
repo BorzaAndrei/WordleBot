@@ -95,6 +95,10 @@ class Score:
                                  text=congratulate_message,
                                  reply_to_message_id=update.message.message_id,
                                  disable_notification=True)
+        
+        if len(data[game_type][day].keys()) == len(data["total_scores"][game_type].keys()):
+            updated_data = self.get_scores_data(update.effective_chat.id)
+            self.calculate_top_for_day_v2(update, context, day, game_type, updated_data)
     
     def reset_game(self, chat_id, data, game_type):
         for player_score in data['total_scores'][game_type]:
@@ -112,6 +116,25 @@ class Score:
         announcement_message += "Congratulations!\n"
         announcement_message += "I will reset everybody's score now. Good luck next game to all the other losers!"
         context.bot.send_message(chat_id=update.effective_chat.id, text=announcement_message)
+
+    def calculate_command(self, update: Update, context: CallbackContext):
+        args = ' '.join(context.args)
+        split_args = args.split(' ')
+        if len(split_args) < 1:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Invalid Command! The structure is "
+                                                                            "/calculate {day_number} {normal/ro} {v1/v2}")
+            return
+
+        day = split_args[0]
+        game_type = 'normal' if len(split_args) == 1 or 'ro' not in split_args[1] else 'ro'
+        data = self.get_scores_data(update.effective_chat.id)
+        if day not in data[game_type]:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Invalid day! Please enter a day where "
+                                                                            "players submitted their results!")
+            return
+
+        self.calculate_top_for_day_v2(update, context, day, game_type, data)
+
 
     def calculate_top_for_day(self, update: Update, context: CallbackContext):
         args = ' '.join(context.args)
@@ -174,24 +197,10 @@ class Score:
             self.announce_winners(game_winners, update, context)
             self.reset_game(update.effective_chat.id, data, game_type)
 
-    def calculate_top_for_day_v2(self, update: Update, context: CallbackContext):
-        args = ' '.join(context.args)
-        split_args = args.split(' ')
-        if len(split_args) < 1:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Invalid Command! The structure is "
-                                                                            "/calculate {day_number} {normal/ro}")
-            return
-
-        day = split_args[0]
-        game_type = 'normal' if len(split_args) == 1 or 'ro' not in split_args[1] else 'ro'
-        data = self.get_scores_data(update.effective_chat.id)
-        if day not in data[game_type]:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Invalid day! Please enter a day where "
-                                                                            "players submitted their results!")
-            return
-        scores = set(
-            sorted([(data[game_type][day][player], player) for player in data[game_type][day]], key=lambda x: x[0],
-                   reverse=True))
+    def calculate_top_for_day_v2(self, update: Update, context: CallbackContext, day: int, game_type: str, data):
+        scores = sorted([(data[game_type][day][player], player) for player in data[game_type][day]], key=lambda x: x[0])
+        
+        logging.info(f"Today scores: {scores}")
         
         game_winners = []
         congratulate_message = "Today's scoreboard:\n"
@@ -221,6 +230,8 @@ class Score:
             elif result[0] == 6:
                 data['total_scores'][game_type][result[1]] += 1
                 congratulate_message += "1"
+            else:
+                congratulate_message += "0"
             congratulate_message += " points\n"
             if data['total_scores'][game_type][result[1]] >= 100:
                 game_winners.append(result[1])

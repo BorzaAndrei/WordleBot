@@ -33,7 +33,7 @@ def start_up():
     show_points_handler = CommandHandler('show_points', score.print_total_scores)
     dispatcher.add_handler(show_points_handler)
 
-    calculate_points_handler = CommandHandler('calculate', score.calculate_top_for_day_v2)
+    calculate_points_handler = CommandHandler('calculate', score.calculate_command)
     dispatcher.add_handler(calculate_points_handler)
 
     help_handler = CommandHandler('help', help_command)
