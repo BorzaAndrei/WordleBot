@@ -36,6 +36,12 @@ def start_up():
     calculate_points_handler = CommandHandler('calculate', score.calculate_command)
     dispatcher.add_handler(calculate_points_handler)
 
+    remove_player_handler = CommandHandler('remove', score.remove_user_command)
+    dispatcher.add_handler(remove_player_handler)
+
+    hall_of_fame_handler = CommandHandler('hall_of_fame', score.display_hall_of_fame_command)
+    dispatcher.add_handler(hall_of_fame_handler)
+
     help_handler = CommandHandler('help', help_command)
     dispatcher.add_handler(help_handler)
 

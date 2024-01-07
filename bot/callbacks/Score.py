@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import re
+import itertools
 
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -38,10 +39,34 @@ class Score:
         data[game_type][day][user_name] = int(user_score)
         self.save_data(update.effective_chat.id, data)
 
+        players_doing_better = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[1] > int(user_score), data["total_scores"][game_type].items())))
+        players_doing_worse = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[1] < int(user_score), data["total_scores"][game_type].items())))
+
+        if len(players_doing_better) == 0:
+            msg_list = ["You are crushing everybody else! There is no one better than you!",
+                                  "Still crushing everybody else I see. Good job!",
+                                  "Future winner right here!"]
+        else:
+            msg_list = [f"{random.choice(players_doing_better)} is still ahead of you! You have to work harder.",
+                        f"Do you think you can beat {random.choice(players_doing_better)} with this? Come on!",
+                        f"{random.choice(players_doing_better)} is not even afraid of you. They think they are way better! (Trust me, I've seen their messages)",
+                        f"Come on, you can take down {random.choice(players_doing_better)} if you play just a bit better!"]
+
+        if len(players_doing_worse) == 0:
+            playing_worse_msg_list = ["Computing... Ok.. I've done the calculations and you are not going to like this: You are dead last.",
+                                      "I hate to kick someone when they're down.. but.. I'm kidding. I'm just a mean bot and you are dead last",
+                                      "I'm sorry. I have nothing nice to say today."]
+        else:
+            playing_worse_msg_list = [f"Hey, at least you are beating {random.choice(players_doing_worse)}. That's still something.",
+                                      f"Hey, you are not first, but at least you can look down on {random.choice(players_doing_worse)}. They really can play better.",
+                                      f"Nice guess! Let's take a second and laugh together at {random.choice(players_doing_worse)} ... 🤣🤣🤣 ahahahaha! Don't you fell better now?"]
+            
+        msg_list.extend(playing_worse_msg_list)
+
         congratulate_message = ""
         splitted_message = update.message.text.split('\n')
         if user_score == '100':
-            congratulate_message = random.choice([f"Uff... This one was tough, right {user_name}?",
+            congratulate_message = random.choice(list(itertools.chain([f"Uff... This one was tough, right {user_name}?",
                                                   f"Maybe next time drink you coffee first!",
                                                   f"Ouchie!",
                                                   f"Oopa!",
@@ -51,45 +76,65 @@ class Score:
                                                   "Hahahahaha 🤣🤣!",
                                                   f"You dummy! Did you really think it was {splitted_message[-1]}?",
                                                   "Ahahahahahahahahaha",
-                                                  "😱😱😱"])
+                                                  "😱😱😱",
+                                                  "Please don't cry...",
+                                                  "OOMPA LOOMPA DOOBA DEE DOO You are a loser too",
+                                                  "I have been told that I am a bit too mean, but I really don't have anything nice to say to this, I'm sorry.",
+                                                  "No points for you today."], msg_list)))
         elif user_score == '1':
             congratulate_message = random.choice([f"WOW! HOLE IN ONE FOR {user_name}",
                                                   f"CHEATER ALERT🔊! CHEATER ALERT🔊! CHEATER ALERT🔊!",
-                                                  f"WE GOT A GENIUS OVER HERE!"])
+                                                  f"WE GOT A GENIUS OVER HERE!",
+                                                  "Damn. Now this is some serious Wordle"])
         elif user_score == '2':
-            congratulate_message = random.choice([f"Nice one, {user_name}! 🤓",
+            congratulate_message = random.choice(list(itertools.chain([f"Nice one, {user_name}! 🤓",
                                                   f"You're getting better {user_name}!",
                                                   f"Great job! Maybe mind sharing your starting word?",
                                                   "Everybody here envies you today! 🧠",
-                                                  f"Get out of here! 😤 Who starts with {splitted_message[1]}"])
+                                                  f"Get out of here! 😤 Who starts with {splitted_message[1]}",
+                                                  "Now this is how you play wordle!",
+                                                  f"WOW! Nice job, {user_name}",
+                                                  "You rock!"], msg_list)))
         elif user_score == '3':
-            congratulate_message = random.choice(["Nice!",
+            congratulate_message = random.choice(list(itertools.chain(["Nice!",
                                                   "Good one!",
                                                   f"I'm proud of you, {user_name}!",
                                                   "Great!",
                                                   "You are a machine! 🤖",
-                                                  f"Interesting choice of words! I wouldn't have thought of {splitted_message[2]}."])
+                                                  f"Interesting choice of words! I wouldn't have thought of {splitted_message[2]}.",
+                                                  "That's a good one!",
+                                                  "Yay for you!",
+                                                  f"LET'S GO {user_name}! 👏👏👏 LET'S GO {user_name} 👏👏👏"], msg_list)))
         elif user_score == '4':
-            congratulate_message = random.choice(["Not great, not terrible.",
+            congratulate_message = random.choice(list(itertools.chain(["Not great, not terrible.",
                                                   "Mediocre.. 🥱",
                                                   "Oh.. I guess 4 isn't too bad for this word..",
                                                   "You know you could have done better! 😉",
-                                                  "Mhm.. I'm not impressed, really."])
+                                                  "Mhm.. I'm not impressed, really.",
+                                                  "So close, yet so far..",
+                                                  "There is still room to improve!",
+                                                  "I don't even play and I could have guessed this one in 3.",
+                                                  "For this yucky word, 4 is a good amount of guesses.",
+                                                  "Hey, 3 points are 3 points",
+                                                  "Good enough"], msg_list)))
         elif user_score == '5':
-            congratulate_message = random.choice(["Oopa!",
+            congratulate_message = random.choice(list(itertools.chain(["Oopa!",
                                                   "Only one 2 outcomes are worse than this one! 😳",
                                                   "Bad luck!",
                                                   "Let's see how the others perform, don't give up yet!",
                                                   "It's ok! 🤥",
                                                   "Not really that good, is it?",
-                                                  "Hmm... Great job, I guess... 👺"])
+                                                  "Hmm... Great job, I guess... 👺",
+                                                  "Big uf"], msg_list)))
         elif user_score == '6':
-            congratulate_message = random.choice(["🤡",
+            congratulate_message = random.choice(list(itertools.chain(["🤡",
                                                 "🤨",
                                                 "I am 100% certain you didn't cheat today! Great job!",
                                                 "Hey, at least you got it!",
                                                 "You must be very lucky in love! 💋",
-                                                "There is always tomorrow! 🤩"])
+                                                "There is always tomorrow! 🤩",
+                                                "Big L for you today",
+                                                f"1 point for {user_name}"], msg_list)))
 
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text=congratulate_message,
@@ -100,13 +145,27 @@ class Score:
             updated_data = self.get_scores_data(update.effective_chat.id)
             self.calculate_top_for_day_v2(update, context, day, game_type, updated_data)
     
-    def reset_game(self, chat_id, data, game_type):
+    def reset_game(self, chat_id, game_type):
+        data = self.get_scores_data(chat_id)
         for player_score in data['total_scores'][game_type]:
             data['total_scores'][game_type][player_score] = 0
         self.save_data(chat_id, data)
     
 
+    def add_to_hall_of_fame(self, winner_names, update: Update, context: CallbackContext):
+        data = self.get_scores_data(update.effective_chat.id)
+        if "hall_of_fame" not in data.keys():
+            data["hall_of_fame"] = {}
+        for winner in winner_names:
+            if winner not in data["hall_of_fame"].keys():
+                data["hall_of_fame"][winner] = 1
+            else:
+                data["hall_of_fame"][winner] += 1
+        self.save_data(update.effective_chat.id, data)
+    
+
     def announce_winners(self, winners_names, update: Update, context: CallbackContext):
+        self.add_to_hall_of_fame(winners_names, update, context)
         if len(winners_names) > 1:
             announcement_message = "We have multiple winners!\n"
             announcement_message += f"Everybody! Let's give a round of applause to: {', '.join(winners_names)}!\n"
@@ -116,6 +175,7 @@ class Score:
         announcement_message += "Congratulations!\n"
         announcement_message += "I will reset everybody's score now. Good luck next game to all the other losers!"
         context.bot.send_message(chat_id=update.effective_chat.id, text=announcement_message)
+        self.display_hall_of_fame_command(update, context)
 
     def calculate_command(self, update: Update, context: CallbackContext):
         args = ' '.join(context.args)
@@ -195,7 +255,7 @@ class Score:
 
         if len(game_winners) > 0:
             self.announce_winners(game_winners, update, context)
-            self.reset_game(update.effective_chat.id, data, game_type)
+            self.reset_game(update.effective_chat.id, game_type)
 
     def calculate_top_for_day_v2(self, update: Update, context: CallbackContext, day: int, game_type: str, data):
         scores = sorted([(data[game_type][day][player], player) for player in data[game_type][day]], key=lambda x: x[0])
@@ -245,7 +305,7 @@ class Score:
 
         if len(game_winners) > 0:
             self.announce_winners(game_winners, update, context)
-            self.reset_game(update.effective_chat.id, data, game_type)
+            self.reset_game(update.effective_chat.id, game_type)
 
 
     def construct_total_scores_string(self, chat_id, game_type):
@@ -275,7 +335,8 @@ class Score:
                     "ro": {}
                 },
                 "normal": {},
-                "ro": {}
+                "ro": {},
+                "hall_of_fame": {}
             })
             self.redis.set(f"{chat_id}-scores.json", data)
         return json.loads(data)
@@ -299,3 +360,24 @@ class Score:
         self.save_data(update.effective_chat.id, data)
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text=f"Successfully set {name}'s score to {new_score}")
+    
+    def remove_user_command(self, update: Update, context: CallbackContext):
+        args = ' '.join(context.args)
+        split_args = args.split(' ')
+        if len(split_args) != 2:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Invalid Command! The structure is /remove {first_name} {normal/ro}")
+        
+        name = split_args[0]
+        game_type = split_args[1]
+        data = self.get_scores_data(update.effective_chat.id)
+        del data["total_scores"][game_type][name]
+        self.save_data(update.effective_chat.id, data)
+        context.bot.send_message(chat_id=update.effective_chat.id, text=f"Successfully removed player {name} from the game {game_type}.")
+    
+    def display_hall_of_fame_command(self, update: Update, context: CallbackContext):
+        data = self.get_scores_data(update.effective_chat.id)
+        winners = sorted(data["hall_of_fame"].items(), key=lambda item: item[1], reverse=True)
+        announcement = f"--- THE WORDLE HALL OF FAME ---\n"
+        for ind, winner in enumerate(winners):
+            announcement += f"{ind + 1}. {winner[0]}: {winner[1]} wins\n"
+        context.bot.send_message(chat_id=update.effective_chat.id, text=announcement)
