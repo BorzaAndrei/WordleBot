@@ -32,36 +32,42 @@ class Score:
 
         if day not in data["normal"]:
             data["normal"][day] = {}
+            data["chosen_today"] = []
         if day not in data["ro"]:
             data["ro"][day] = {}
+            data["chosen_today"] = []
+        if "chosen_today" not in data.keys():
+            data["chosen_today"] = []
 
         game_type = "ro" if is_ro else "normal"
         data[game_type][day][user_name] = int(user_score)
-        self.save_data(update.effective_chat.id, data)
 
-        players_doing_better = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[1] > int(user_score), data["total_scores"][game_type].items())))
-        players_doing_worse = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[1] < int(user_score), data["total_scores"][game_type].items())))
+        old_score = data["total_scores"][game_type][user_name]
+        players_doing_better = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[0] not in data["chosen_today"] and x[1] > old_score, data["total_scores"][game_type].items())))
+        players_doing_worse = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[0] not in data["chosen_today"] and x[1] < old_score, data["total_scores"][game_type].items())))
 
+        logging.info(f"Doing better: {players_doing_better}")
+        logging.info(f"Doing worse: {players_doing_worse}")
         if len(players_doing_better) == 0:
-            msg_list = ["You are crushing everybody else! There is no one better than you!",
+            playing_better_msg_list = ["You are crushing everybody else! There is no one better than you!",
                                   "Still crushing everybody else I see. Good job!",
                                   "Future winner right here!"]
         else:
-            msg_list = [f"{random.choice(players_doing_better)} is still ahead of you! You have to work harder.",
-                        f"Do you think you can beat {random.choice(players_doing_better)} with this? Come on!",
-                        f"{random.choice(players_doing_better)} is not even afraid of you. They think they are way better! (Trust me, I've seen their messages)",
-                        f"Come on, you can take down {random.choice(players_doing_better)} if you play just a bit better!"]
+            player_chosen = random.choice(players_doing_better)
+            playing_better_msg_list = [f"{player_chosen} is still ahead of you! You have to work harder.",
+                        f"Do you think you can beat {player_chosen} with this? Come on!",
+                        f"{player_chosen} is not even afraid of you. They think they are way better! (Trust me, I've seen their messages)",
+                        f"Come on, you can take down {player_chosen} if you play just a bit better!"]
 
         if len(players_doing_worse) == 0:
-            playing_worse_msg_list = ["Computing... Ok.. I've done the calculations and you are not going to like this: You are dead last.",
-                                      "I hate to kick someone when they're down.. but.. I'm kidding. I'm just a mean bot and you are dead last",
+            playing_worse_msg_list = ["Computing... Ok.. You are not doing to swell",
+                                      "I hate to kick someone when they're down.. but.. you know..",
                                       "I'm sorry. I have nothing nice to say today."]
         else:
-            playing_worse_msg_list = [f"Hey, at least you are beating {random.choice(players_doing_worse)}. That's still something.",
-                                      f"Hey, you are not first, but at least you can look down on {random.choice(players_doing_worse)}. They really can play better.",
-                                      f"Nice guess! Let's take a second and laugh together at {random.choice(players_doing_worse)} ... 🤣🤣🤣 ahahahaha! Don't you fell better now?"]
-            
-        msg_list.extend(playing_worse_msg_list)
+            player_chosen = random.choice(players_doing_worse)
+            playing_worse_msg_list = [f"Hey, at least you are beating {player_chosen}. That's still something.",
+                                      f"Hey, you are not first, but at least you can look down on {player_chosen}. They really can play better.",
+                                      f"Nice guess! Let's take a second and laugh together at {player_chosen} ... 🤣🤣🤣 ahahahaha! Don't you fell better now?"]
 
         congratulate_message = ""
         splitted_message = update.message.text.split('\n')
@@ -80,7 +86,7 @@ class Score:
                                                   "Please don't cry...",
                                                   "OOMPA LOOMPA DOOBA DEE DOO You are a loser too",
                                                   "I have been told that I am a bit too mean, but I really don't have anything nice to say to this, I'm sorry.",
-                                                  "No points for you today."], msg_list)))
+                                                  "No points for you today."], playing_better_msg_list, playing_worse_msg_list)))
         elif user_score == '1':
             congratulate_message = random.choice([f"WOW! HOLE IN ONE FOR {user_name}",
                                                   f"CHEATER ALERT🔊! CHEATER ALERT🔊! CHEATER ALERT🔊!",
@@ -94,7 +100,7 @@ class Score:
                                                   f"Get out of here! 😤 Who starts with {splitted_message[1]}",
                                                   "Now this is how you play wordle!",
                                                   f"WOW! Nice job, {user_name}",
-                                                  "You rock!"], msg_list)))
+                                                  "You rock!"], playing_worse_msg_list)))
         elif user_score == '3':
             congratulate_message = random.choice(list(itertools.chain(["Nice!",
                                                   "Good one!",
@@ -104,7 +110,7 @@ class Score:
                                                   f"Interesting choice of words! I wouldn't have thought of {splitted_message[2]}.",
                                                   "That's a good one!",
                                                   "Yay for you!",
-                                                  f"LET'S GO {user_name}! 👏👏👏 LET'S GO {user_name} 👏👏👏"], msg_list)))
+                                                  f"LET'S GO {user_name}! 👏👏👏 LET'S GO {user_name} 👏👏👏"], playing_better_msg_list, playing_worse_msg_list)))
         elif user_score == '4':
             congratulate_message = random.choice(list(itertools.chain(["Not great, not terrible.",
                                                   "Mediocre.. 🥱",
@@ -116,7 +122,7 @@ class Score:
                                                   "I don't even play and I could have guessed this one in 3.",
                                                   "For this yucky word, 4 is a good amount of guesses.",
                                                   "Hey, 3 points are 3 points",
-                                                  "Good enough"], msg_list)))
+                                                  "Good enough"], playing_better_msg_list, playing_worse_msg_list)))
         elif user_score == '5':
             congratulate_message = random.choice(list(itertools.chain(["Oopa!",
                                                   "Only one 2 outcomes are worse than this one! 😳",
@@ -125,7 +131,7 @@ class Score:
                                                   "It's ok! 🤥",
                                                   "Not really that good, is it?",
                                                   "Hmm... Great job, I guess... 👺",
-                                                  "Big uf"], msg_list)))
+                                                  "Big uf"], playing_better_msg_list, playing_worse_msg_list)))
         elif user_score == '6':
             congratulate_message = random.choice(list(itertools.chain(["🤡",
                                                 "🤨",
@@ -134,7 +140,14 @@ class Score:
                                                 "You must be very lucky in love! 💋",
                                                 "There is always tomorrow! 🤩",
                                                 "Big L for you today",
-                                                f"1 point for {user_name}"], msg_list)))
+                                                f"1 point for {user_name}"], playing_better_msg_list, playing_worse_msg_list)))
+
+        for player in data["total_scores"][game_type].keys():
+            if player in congratulate_message:
+                data["chosen_today"].append(player)
+                break
+        
+        self.save_data(update.effective_chat.id, data)
 
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text=congratulate_message,
