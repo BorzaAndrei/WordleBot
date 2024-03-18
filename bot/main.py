@@ -42,6 +42,9 @@ def start_up():
     hall_of_fame_handler = CommandHandler('hall_of_fame', score.display_hall_of_fame_command)
     dispatcher.add_handler(hall_of_fame_handler)
 
+    sanitize_handler = CommandHandler("sanitize", score.sanitize_thousands)
+    dispatcher.add_handler(sanitize_handler)
+
     help_handler = CommandHandler('help', help_command)
     dispatcher.add_handler(help_handler)
 

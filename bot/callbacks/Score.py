@@ -18,9 +18,9 @@ class Score:
         self.bind_port = int(os.environ['REDIS_PORT'])
 
     def store_worlde_score(self, update: Update, context: CallbackContext):
-        message = re.search("Wordle([-RO]*) ([0-9]+) ([0-9X])/[0-9]", update.message.text)
+        message = re.search("Wordle([-RO]*) ([.,0-9]+) [🎉 ]*([0-9X])/[0-9]", update.message.text)
         is_ro = message.group(1) is not None and len(message.group(1)) > 0
-        day = message.group(2)
+        day = message.group(2).replace(",", "").replace(".", "")
         user_score = message.group(3)
         user_score = user_score if user_score != 'X' else '100'
         user_name = update.message.from_user["last_name"] if update.message.from_user["first_name"] is None else \
@@ -394,3 +394,35 @@ class Score:
         for ind, winner in enumerate(winners):
             announcement += f"{ind + 1}. {winner[0]}: {winner[1]} wins\n"
         context.bot.send_message(chat_id=update.effective_chat.id, text=announcement)
+
+    def sanitize_thousands(self, update: Update, context: CallbackContext):
+        args = ' '.join(context.args)
+        split_args = args.split(' ')
+        if len(split_args) != 1:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Error! You probably shouldn't be using this command")
+        
+        data = self.get_scores_data(update.effective_chat.id)
+        if "1.000" in data["normal"].keys():
+            if "1000" not in data["normal"].keys():
+                    data["normal"]["1000"] = {}
+            for username in data["normal"]["1.000"].keys():
+                data["normal"]["1000"][username] = data["normal"]["1.000"][username]
+        if "1,000" in data["normal"].keys():
+            if "1000" not in data["normal"].keys():
+                    data["normal"]["1000"] = {}
+            for username in data["normal"]["1,000"].keys():
+                data["normal"]["1000"][username] = data["normal"]["1,000"][username]
+        
+        if "1.001" in data["normal"].keys():
+            if "1001" not in data["normal"].keys():
+                    data["normal"]["1001"] = {}
+            for username in data["normal"]["1.001"].keys():
+                data["normal"]["1001"][username] = data["normal"]["1.001"][username]
+        if "1,001" in data["normal"].keys():
+            if "1001" not in data["normal"].keys():
+                    data["normal"]["1001"] = {}
+            for username in data["normal"]["1,001"].keys():
+                data["normal"]["1001"][username] = data["normal"]["1,001"][username]
+        
+        self.save_data(update.effective_chat.id, data)
+        context.bot.send_message(chat_id=update.effective_chat.id, text=f"Scores for days 1000 and 1001 should be correct now.")
