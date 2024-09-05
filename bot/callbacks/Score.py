@@ -42,32 +42,36 @@ class Score:
         game_type = "ro" if is_ro else "normal"
         data[game_type][day][user_name] = int(user_score)
 
-        old_score = data["total_scores"][game_type][user_name]
-        players_doing_better = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[0] not in data["chosen_today"] and x[1] > old_score, data["total_scores"][game_type].items())))
-        players_doing_worse = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[0] not in data["chosen_today"] and x[1] < old_score, data["total_scores"][game_type].items())))
+        if user_name in data["total_scores"][game_type].keys():
+            old_score = data["total_scores"][game_type][user_name]
+            players_doing_better = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[0] not in data["chosen_today"] and x[1] > old_score, data["total_scores"][game_type].items())))
+            players_doing_worse = list(map(lambda x: x[0], filter(lambda x: x[0] != user_name and x[0] not in data["chosen_today"] and x[1] < old_score, data["total_scores"][game_type].items())))
 
-        logging.info(f"Doing better: {players_doing_better}")
-        logging.info(f"Doing worse: {players_doing_worse}")
-        if len(players_doing_better) == 0:
-            playing_better_msg_list = ["You are crushing everybody else! There is no one better than you!",
-                                  "Still crushing everybody else I see. Good job!",
-                                  "Future winner right here!"]
-        else:
-            player_chosen = random.choice(players_doing_better)
-            playing_better_msg_list = [f"{player_chosen} is still ahead of you! You have to work harder.",
-                        f"Do you think you can beat {player_chosen} with this? Come on!",
-                        f"{player_chosen} is not even afraid of you. They think they are way better! (Trust me, I've seen their messages)",
-                        f"Come on, you can take down {player_chosen} if you play just a bit better!"]
+            logging.info(f"Doing better: {players_doing_better}")
+            logging.info(f"Doing worse: {players_doing_worse}")
+            if len(players_doing_better) == 0:
+                playing_better_msg_list = ["You are crushing everybody else! There is no one better than you!",
+                                    "Still crushing everybody else I see. Good job!",
+                                    "Future winner right here!"]
+            else:
+                player_chosen = random.choice(players_doing_better)
+                playing_better_msg_list = [f"{player_chosen} is still ahead of you! You have to work harder.",
+                            f"Do you think you can beat {player_chosen} with this? Come on!",
+                            f"{player_chosen} is not even afraid of you. They think they are way better! (Trust me, I've seen their messages)",
+                            f"Come on, you can take down {player_chosen} if you play just a bit better!"]
 
-        if len(players_doing_worse) == 0:
-            playing_worse_msg_list = ["Computing... Ok.. You are not doing to swell",
-                                      "I hate to kick someone when they're down.. but.. you know..",
-                                      "I'm sorry. I have nothing nice to say today."]
+            if len(players_doing_worse) == 0:
+                playing_worse_msg_list = ["Computing... Ok.. You are not doing to swell",
+                                        "I hate to kick someone when they're down.. but.. you know..",
+                                        "I'm sorry. I have nothing nice to say today."]
+            else:
+                player_chosen = random.choice(players_doing_worse)
+                playing_worse_msg_list = [f"Hey, at least you are beating {player_chosen}. That's still something.",
+                                        f"Hey, you are not first, but at least you can look down on {player_chosen}. They really can play better.",
+                                        f"Nice guess! Let's take a second and laugh together at {player_chosen} ... 🤣🤣🤣 ahahahaha! Don't you fell better now?"]
         else:
-            player_chosen = random.choice(players_doing_worse)
-            playing_worse_msg_list = [f"Hey, at least you are beating {player_chosen}. That's still something.",
-                                      f"Hey, you are not first, but at least you can look down on {player_chosen}. They really can play better.",
-                                      f"Nice guess! Let's take a second and laugh together at {player_chosen} ... 🤣🤣🤣 ahahahaha! Don't you fell better now?"]
+            playing_better_msg_list = []
+            playing_worse_msg_list = []
 
         congratulate_message = ""
         splitted_message = update.message.text.split('\n')
